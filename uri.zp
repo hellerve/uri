@@ -1,0 +1,20 @@
+(module "uri"
+  (export
+    `("uri?" ,uri?)
+    `("parseable?" ,parseable?)
+    `("str-reference?" ,is-reference?)
+    `("str-relative-reference?" ,is-relative-reference?)
+    `("str-absolute?" ,is-absolute?)
+    `("str-v4?" ,is-v4?)
+    `("str-v6?" ,is-v6?)
+    `("parse" ,parse-uri)
+    `("parse-reference" ,parse-uri-reference)
+    `("parse-relative-reference" ,parse-uri-relative-reference)
+    `("parse-absolute" ,parse-absolute-uri)
+    `("to-string" ,to-string))
+
+  (loads "priv/all")
+
+  (parse? (lambda (str)
+    (if (parseable? str)
+      (parse str)))))

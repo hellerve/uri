@@ -1,0 +1,15 @@
+name:                uri
+version:             0.0.1
+author:              Veit Heller
+maintainer:          Veit Heller
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  exposed-modules:     Uri
+  build-depends:       base >=4.9 && <4.10,
+                       network-uri,
+                       zepto >=0.9 && <0.10
+  default-language:    Haskell2010
+  Hs-Source-Dirs:      priv
