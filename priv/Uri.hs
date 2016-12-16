@@ -9,6 +9,8 @@ joinPDoc = unlines . flip (:) parseDocSkeleton
 
 joinParseableDoc = unlines . flip (:) parseableDocSkeleton
 
+joinPredDoc = unlines . flip (:) predDocSkeleton
+
 parseDocSkeleton = ["If the parse fails, false is returned."
                    ,""
                    ,"params:"
@@ -23,6 +25,13 @@ parseableDocSkeleton = [""
                        ,"complexity: O(n)"
                        ,"returns: a boolean"
                        ]
+
+predDocSkeleton = [""
+                  ,"params:"
+                  ,"- uri: the uri to check"
+                  ,"complexity: O(n)"
+                  ,"returns: a boolean"
+                  ]
 
 exports :: [(String, [LispVal] -> IOThrowsError LispVal, String)]
 exports = [("parse-uri", unaryIOOp parse, joinPDoc parseDoc),
@@ -42,7 +51,12 @@ exports = [("parse-uri", unaryIOOp parse, joinPDoc parseDoc),
            ("is-absolute?", unaryIOOp isAbs, joinParseableDoc isAbsDoc),
            ("is-v4?", unaryIOOp isV4, joinParseableDoc isV4Doc),
            ("is-v6?", unaryIOOp isV6, joinParseableDoc isV6Doc),
-           ("to-string", unaryIOOp stringify, joinDoc stringifyDoc)]
+           ("to-string", unaryIOOp stringify, joinDoc stringifyDoc),
+           ("uri-is-absolute?", unaryIOOp uriIsAbs, joinPredDoc uriIsAbsDoc),
+           ("uri-is-relative?", unaryIOOp uriIsRel, joinPredDoc uriIsRelDoc),
+           ("relative-to", relativeT, joinDoc relTDoc),
+           ("relative-from", relativeF, joinDoc relFDoc)
+          ]
 
 parse' parsef (SimpleVal (String s)) = case parsef s of
   Just uri -> return $ toOpaque uri
@@ -106,6 +120,12 @@ isV6Doc = "check whether <par>str</par> is a valid IPv6 address."
 
 isV6 = parseable' isIPv6address
 
+unpickle fun uri@(Opaque _) =
+  case (fromOpaque uri) :: Maybe URI of
+    Just v -> fun v
+    Nothing -> lispErr $ TypeMismatch "uri" uri
+unpickle _ x = lispErr $ TypeMismatch "uri" x
+
 stringifyDoc = ["convert an URI <par>uri</par> to a string."
                ,""
                ,"params:"
@@ -114,7 +134,49 @@ stringifyDoc = ["convert an URI <par>uri</par> to a string."
                ,"returns: a string"
                ]
 
-stringify uri@(Opaque _) = case (fromOpaque uri) :: Maybe URI of
-  Just v -> return $ fromSimple $ String $ show v
-  Nothing -> lispErr $ TypeMismatch "string" uri
-stringify x = lispErr $ TypeMismatch "uri" x
+stringify = unpickle (return . fromSimple . String . show)
+
+uriIsAbsDoc = "check whether <par>uri</par> is absolute."
+
+uriIsAbs = unpickle (return . fromSimple . Bool . uriIsAbsolute)
+
+uriIsRelDoc = "check whether <par>uri</par> is relative."
+
+uriIsRel = unpickle (return . fromSimple . Bool . uriIsRelative)
+
+concat' fun [first@(Opaque _), second@(Opaque _)] =
+  case (fromOpaque first) :: Maybe URI of
+    Just v ->
+      case (fromOpaque second) :: Maybe URI of
+        Just v2 -> return $ toOpaque $ fun v v2
+        Nothing -> lispErr $ TypeMismatch "uri" second
+    Nothing -> lispErr $ TypeMismatch "uri" first
+concat' _ [x, (Opaque _)] = lispErr $ TypeMismatch "uri" x
+concat' _ [_, x] = lispErr $ TypeMismatch "uri" x
+concat' _ x = lispErr $ NumArgs 2 x
+
+relTDoc = ["concatenate two URIs, making the <par>first</par>"
+          ,"relative to the <par>second</par>."
+          ,""
+          ,"params:"
+          ,"- first: the first URI (will be the absolute)"
+          ,"- second: the second URI (will be the reference)"
+          ,"complexity: O(1)"
+          ,"returns: a URI"
+          ]
+
+relativeT = concat' relativeTo
+
+relFDoc = ["return a new URI which represents the relative location"
+          ,"of the <par>first</par> one with respect to the <par>second</par>"
+          ,"one. Thus, the values supplied are expected to be absolute URIs,"
+          ,"and the result returned may be a relative URI."
+          ,""
+          ,"params:"
+          ,"- first: the first URI (will be the absolute)"
+          ,"- second: the second URI (will be the reference)"
+          ,"complexity: O(1)"
+          ,"returns: a URI"
+          ]
+
+relativeF = concat' relativeFrom
