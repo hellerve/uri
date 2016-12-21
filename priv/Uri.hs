@@ -52,6 +52,11 @@ exports = [("parse-uri", unaryIOOp parse, joinPDoc parseDoc),
            ("is-v4?", unaryIOOp isV4, joinParseableDoc isV4Doc),
            ("is-v6?", unaryIOOp isV6, joinParseableDoc isV6Doc),
            ("to-string", unaryIOOp stringify, joinDoc stringifyDoc),
+           ("to-unsafe-string",
+            unaryIOOp stringifyUnsafe,
+            joinDoc stringifyUnsafeDoc),
+           ("reserved?", unaryIOOp res, joinDoc resDoc),
+           ("unreserved?", unaryIOOp unres, joinDoc unresDoc),
            ("uri-is-absolute?", unaryIOOp uriIsAbs, joinPredDoc uriIsAbsDoc),
            ("uri-is-relative?", unaryIOOp uriIsRel, joinPredDoc uriIsRelDoc),
            ("relative-to", relativeT, joinDoc relTDoc),
@@ -135,6 +140,43 @@ stringifyDoc = ["convert an URI <par>uri</par> to a string."
                ]
 
 stringify = unpickle (return . fromSimple . String . show)
+
+stringifyUnsafeDoc = ["like <fun>uri:to-string</fun>, but does not hide passwords."
+                     ,""
+                     ,"params:"
+                     ,"- uri: the URI to stringify"
+                     ,"complexity: O(n)"
+                     ,"returns: a string"
+                     ]
+
+stringifyUnsafe =
+  unpickle (return . fromSimple . String . (\f -> f "") . (uriToString id))
+
+resDoc = ["return whether <par>char</par> is a reserved character in "
+         ,"a URI. To include a literal instance of one of these "
+         ,"characters in a component of a URI, it must be escaped."
+         ,""
+         ,"params:"
+         ,"- char: the character to check"
+         ,"complexity: O(n)"
+         ,"returns: a boolean"
+         ]
+
+res (SimpleVal (Character c)) = return $ fromSimple $ Bool $ isReserved c
+res x = lispErr $ TypeMismatch "character" x
+
+unresDoc = ["return whether <par>char</par> is a n unreserved character"
+           ,"in a URI. These characters do not need to be escaped in a"
+           ,"URI."
+           ,""
+           ,"params:"
+           ,"- char: the character to check"
+           ,"complexity: O(n)"
+           ,"returns: a boolean"
+           ]
+
+unres (SimpleVal (Character c)) = return $ fromSimple $ Bool $ isUnreserved c
+unres x = lispErr $ TypeMismatch "character" x
 
 uriIsAbsDoc = "check whether <par>uri</par> is absolute."
 
