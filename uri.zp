@@ -1,5 +1,6 @@
 (module "uri"
   (export
+    `("null" ,null)
     `("uri?" ,uri?)
     `("parseable?" ,parseable?)
     `("str-reference?" ,is-reference?)

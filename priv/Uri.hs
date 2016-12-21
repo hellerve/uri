@@ -34,7 +34,8 @@ predDocSkeleton = [""
                   ]
 
 exports :: [(String, [LispVal] -> IOThrowsError LispVal, String)]
-exports = [("parse-uri", unaryIOOp parse, joinPDoc parseDoc),
+exports = [("null", noIOArg nullUri, joinDoc nullDoc),
+           ("parse-uri", unaryIOOp parse, joinPDoc parseDoc),
            ("parse-uri-reference", unaryIOOp parseRef, joinPDoc parseRefDoc),
            ("parse-uri-relative-reference",
             unaryIOOp parseRelativeRef,
@@ -62,6 +63,14 @@ exports = [("parse-uri", unaryIOOp parse, joinPDoc parseDoc),
            ("relative-to", relativeT, joinDoc relTDoc),
            ("relative-from", relativeF, joinDoc relFDoc)
           ]
+
+nullDoc = ["construct an empty URI."
+          ,""
+          ,"complexity: O(1)"
+          ,"returns: an empty URI"
+          ]
+
+nullUri = return $ toOpaque $ nullURI
 
 parse' parsef (SimpleVal (String s)) = case parsef s of
   Just uri -> return $ toOpaque uri
